@@ -45,7 +45,7 @@ class ConversationNewDeviceCell: IconSystemCell {
     
     func updateLabel() {
         guard let systemMessageData = message.systemMessageData,
-            let clients = message.systemMessageData?.clients.flatMap ({ $0 as? UserClientType }),
+            let clients = message.systemMessageData?.clients.compactMap ({ $0 as? UserClientType }),
             let labelFont = self.labelFont,
             let labelBoldFont = self.labelBoldFont,
             let labelTextColor = self.labelTextColor,
