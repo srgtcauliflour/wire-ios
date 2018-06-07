@@ -205,7 +205,14 @@ extension ChatHeadsViewController {
         
         case .changed:
             // if pan left, move chathead with finger, else apply pan resistance
-            let viewOffsetX = offset.x < 0 ? offset.x : (1.0 - (1.0/((offset.x * 0.15 / view.bounds.width) + 1.0))) * view.bounds.width
+
+            let viewOffsetX: CGFloat = 0
+//            if (offset.x < 0 ) {
+//                viewOffsetX = offset.x
+//            } else {
+//                let coeff: CGFloat = (offset.x * CGFloat(0.15) / view.bounds.width) + CGFloat(1.0)
+//                viewOffsetX = CGFloat(1.0) - (CGFloat(1.0)/coeff) * view.bounds.width
+//            }
             chatHeadViewLeftMarginConstraint?.constant = viewOffsetX + containerInsets.left
             chatHeadViewRightMarginConstraint?.constant = viewOffsetX - containerInsets.right
             

@@ -41,9 +41,9 @@ extension Timer {
         }
     }
 
-    fileprivate static func iOS9ScheduledTimer(withTimeInterval: TimeInterval, repeats: Bool, block: (Timer) -> Void) -> Timer {
+    fileprivate static func iOS9ScheduledTimer(withTimeInterval: TimeInterval, repeats: Bool, block: @escaping (Timer) -> Void) -> Timer {
         return self.scheduledTimer(timeInterval: withTimeInterval, target:
-            self, selector: #selector(timerBlockInvoke), userInfo: Box(block), repeats: repeats)
+            self, selector: #selector(timerBlockInvoke), userInfo: Box<(Timer) -> Void>(block), repeats: repeats)
     }
 
     @objc fileprivate static func timerBlockInvoke(timer: Timer) {
