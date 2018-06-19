@@ -31,7 +31,7 @@ public extension UIViewController {
     }
 }
 
-class ChatHeadsViewController: UIViewController {
+class ChatHeadsViewController: UIViewController, ChatHeadPresenter {
     
     enum ChatHeadPresentationState {
         case `default`, hidden, showing, visible, dragging, hiding, last
@@ -56,13 +56,6 @@ class ChatHeadsViewController: UIViewController {
     // MARK: - Public Interface
     
     @objc public func tryToDisplayNotification(_ note: ZMLocalNotification) {
-
-        // hide visible chat head and try again
-        if chatHeadState != .hidden {
-            hideChatHeadFromCurrentStateWithTiming(RBBEasingFunctionEaseInExpo, duration: 0.3)
-            perform(#selector(tryToDisplayNotification(_:)), with: note, afterDelay: 0.3)
-            return
-        }
         
         guard
             let selfID = note.selfUserID,
@@ -75,7 +68,7 @@ class ChatHeadsViewController: UIViewController {
         // if notification is for active account, we only want to show the conversation name
         let title = account.isActive ? note.userInfo?[ConversationNameStringKey] as? String : note.title
         
-        chatHeadView = ChatHeadView(
+        let chatHead = ChatHeadView(
             title: title,
             body: note.body,
             userID: selfID,
@@ -84,16 +77,28 @@ class ChatHeadsViewController: UIViewController {
             isEphemeral: note.isEphemeral
         )
         
-        chatHeadView!.onSelect = {
+        chatHead.onSelect = { [chatHead] in
             SessionManager.shared?.withSession(for: account) { userSession in
                 if let conversation = note.conversation(in: session.managedObjectContext) {
                     SessionManager.shared?.userSession(userSession, show: conversation)
                 }
             }
             
-            self.chatHeadView?.removeFromSuperview()
+            chatHead.removeFromSuperview()
         }
         
+        show(chatHead: chatHead)
+    }
+    
+    @objc func show(chatHead: ChatHeadView) {
+        // hide visible chat head and try again
+        if chatHeadState != .hidden {
+            hideChatHeadFromCurrentStateWithTiming(RBBEasingFunctionEaseInExpo, duration: 0.3)
+            perform(#selector(show(chatHead:)), with: chatHead, afterDelay: 0.3)
+            return
+        }
+        
+        chatHeadView = chatHead
         chatHeadState = .showing
         view.addSubview(chatHeadView!)
         

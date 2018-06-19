@@ -249,6 +249,11 @@ performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem
     return (CallWindowRootViewController *)self.rootViewController.callWindow.rootViewController;
 }
 
+- (NotificationWindowRootViewController *)notificationWindowController
+{
+    return (NotificationWindowRootViewController *)self.rootViewController.overlayWindow.rootViewController;
+}
+
 - (SessionManager *)sessionManager
 {
     return self.rootViewController.sessionManager;

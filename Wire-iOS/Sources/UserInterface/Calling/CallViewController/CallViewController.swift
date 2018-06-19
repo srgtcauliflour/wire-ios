@@ -31,6 +31,7 @@ final class CallViewController: UIViewController {
     fileprivate weak var overlayTimer: Timer?
     fileprivate let hapticsController = CallHapticsController()
     fileprivate let participantsTimestamps = CallParticipantTimestamps()
+    fileprivate let chatHeadsController: CallChatHeadsController
 
     private var observerTokens: [Any] = []
     private var videoConfiguration: VideoConfiguration
@@ -51,12 +52,21 @@ final class CallViewController: UIViewController {
          proximityMonitorManager: ProximityMonitorManager? = ZClientViewController.shared()?.proximityMonitorManager,
          mediaManager: AVSMediaManager = .sharedInstance(),
          permissionsConfiguration: CallPermissionsConfiguration = CallPermissions()) {
-        
         self.voiceChannel = voiceChannel
         self.mediaManager = mediaManager
         self.proximityMonitorManager = proximityMonitorManager
         videoConfiguration = VideoConfiguration(voiceChannel: voiceChannel, mediaManager: mediaManager,  isOverlayVisible: true)
-        callInfoConfiguration = CallInfoConfiguration(voiceChannel: voiceChannel, preferedVideoPlaceholderState: preferedVideoPlaceholderState, permissions: permissionsConfiguration, cameraType: cameraType, sortTimestamps: participantsTimestamps)
+        callInfoConfiguration = CallInfoConfiguration(
+            voiceChannel: voiceChannel,
+            preferedVideoPlaceholderState: preferedVideoPlaceholderState,
+            permissions: permissionsConfiguration,
+            cameraType: cameraType,
+            sortTimestamps: participantsTimestamps
+        )
+        chatHeadsController = CallChatHeadsController(
+            presenter: AppDelegate.shared().notificationWindowController?.chatHeadsViewController,
+            voiceChannel: voiceChannel
+        )
         callInfoRootViewController = CallInfoRootViewController(configuration: callInfoConfiguration)
         videoGridViewController = VideoGridViewController(configuration: videoConfiguration)
         super.init(nibName: nil, bundle: nil)
@@ -248,6 +258,7 @@ extension CallViewController: WireCallCenterCallParticipantObserver {
     
     func callParticipantsDidChange(conversation: ZMConversation, participants: [(UUID, CallParticipantState)]) {
         hapticsController.updateParticipants(participants)
+        chatHeadsController.updateParticipants(participants)
         participantsTimestamps.updateParticipants(participants.map { $0.0 })
         updateConfiguration() // Has to succeed updating the timestamps
     }

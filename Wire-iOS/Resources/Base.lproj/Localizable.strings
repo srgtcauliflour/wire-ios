@@ -551,6 +551,9 @@
 "call.actions.label.make_video_call" = "Start video call";
 "call.actions.label.join_call" = "Join call";
 
+// Call Chathead
+"call.chathead.joined" = "%@ joined";
+
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Profile and Participants
 
