@@ -62,11 +62,6 @@ static AppDelegate *sharedAppDelegate = nil;
     return sharedAppDelegate;
 }
 
-- (void)dealloc
-{
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-}
-
 - (instancetype)init
 {
     self = [super init];
@@ -200,9 +195,6 @@ performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem
 
 - (void)setupTracking
 {
-    // Migrate analytics settings
-    [[TrackingManager shared] migrateFromLocalytics];
-    
     BOOL containsConsoleAnalytics = [[[NSProcessInfo processInfo] arguments] indexOfObjectPassingTest:^BOOL(NSString * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if ([obj isEqualToString:AnalyticsProviderFactory.ZMConsoleAnalyticsArgumentKey]) {
             *stop = YES;
@@ -210,9 +202,11 @@ performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem
         }
         return NO;
     }] != NSNotFound;
+
+    TrackingManager *trackingManager = [TrackingManager shared];
     
     [AnalyticsProviderFactory shared].useConsoleAnalytics = containsConsoleAnalytics;
-    [Analytics loadSharedWithOptedOut:[[TrackingManager shared] disableCrashAndAnalyticsSharing]];
+    [Analytics loadSharedWithOptedOut:trackingManager.disableCrashAndAnalyticsSharing];
 }
 
 - (void)trackLaunchAnalyticsWithLaunchOptions:(NSDictionary *)launchOptions
@@ -252,9 +246,9 @@ performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem
     return [[SessionManager shared] unauthenticatedSession];
 }
 
-- (NotificationWindowRootViewController *)notificationWindowController
+- (CallWindowRootViewController *)callWindowRootViewController
 {
-    return (NotificationWindowRootViewController *)self.rootViewController.overlayWindow.rootViewController;
+    return (CallWindowRootViewController *)self.rootViewController.callWindow.rootViewController;
 }
 
 - (SessionManager *)sessionManager
@@ -300,26 +294,6 @@ performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem
     [analyticsTracker tagPushNotificationsPermissions:userGavePermissions];
 }
 
-- (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)newDeviceToken
-{
-    ZMLogWarn(@"Received APNS token: %@", newDeviceToken);
-    
-    [[SessionManager shared] didRegisteredForRemoteNotificationsWith:newDeviceToken];
-}
-
-- (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error
-{
-    ZMLogInfo(@"application:didFailToRegisterForRemoteNotificationsWithError: %@", error);
-    if (error != nil) {
-        [[Analytics shared] tagApplicationError:error.localizedDescription
-                                  timeInSession:[[UIApplication sharedApplication] lastApplicationRunDuration]];
-    }
-    ZMLogWarn(@"Error registering for push with APNS: %@", error);
-    
-    AnalyticsTracker *analyticsTracker = [AnalyticsTracker analyticsTrackerWithContext:nil];
-    [analyticsTracker tagPushNotificationsPermissions:NO];
-}
-
 @end
 
 @implementation AppDelegate (BackgroundUpdates)
@@ -331,8 +305,6 @@ performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem
         [[Analytics shared] tagAppLaunchWithType:ApplicationLaunchPush];
         self.trackedResumeEvent = YES;
     }
-    
-    [[SessionManager shared] didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
     
     self.launchType = (application.applicationState == UIApplicationStateInactive || application.applicationState == UIApplicationStateBackground) ? ApplicationLaunchPush: ApplicationLaunchDirect;
 }

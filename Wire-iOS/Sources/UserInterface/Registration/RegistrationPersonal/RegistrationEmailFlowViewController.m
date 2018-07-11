@@ -44,6 +44,7 @@
 @property (nonatomic) ZMIncompleteRegistrationUser *unregisteredUser;
 @property (nonatomic) id<ZMRegistrationObserverToken> registrationToken;
 @property (nonatomic) id authenticationToken;
+@property (nonatomic) BOOL marketingConsent;
 
 @end
 
@@ -140,13 +141,12 @@
         
         ZMCompleteRegistrationUser *completeUser = [self.unregisteredUser completeRegistrationUser];
         [[UnauthenticatedSession sharedSession] registerUser:completeUser];
-        
     }
     else if ([viewController isKindOfClass:[TermsOfUseStepViewController class]] ||
              ([viewController isKindOfClass:[EmailStepViewController class]] && [self hasUserAcceptedTOS]))
     {
         [self.analyticsTracker tagAcceptedTermsOfUse];
-        [[UIApplication sharedApplication] registerForRemoteNotifications];
+        [[SessionManager shared] configureUserNotifications];
         
         self.hasUserAcceptedTOS = YES;
         
@@ -156,11 +156,18 @@
         emailVerificationStepViewController.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         
         [self.navigationController pushViewController:emailVerificationStepViewController.registrationFormViewController animated:YES];
+
+        [UIAlertController showNewsletterSubscriptionDialogWithOver: self
+                                                  completionHandler: ^(BOOL marketingConsent) {
+            self.marketingConsent = marketingConsent;
+        }];
     }
     else if ([viewController isKindOfClass:[ProfilePictureStepViewController class]]) {
         ProfilePictureStepViewController *step = (ProfilePictureStepViewController *)viewController;
         [self.analyticsTracker tagAddedPhotoFromSource:step.photoSource];
         [self.formStepDelegate didCompleteFormStep:self];
+
+        [[ZMUserSession sharedSession] submitMarketingConsentWith:self.marketingConsent];
     }
 }
 

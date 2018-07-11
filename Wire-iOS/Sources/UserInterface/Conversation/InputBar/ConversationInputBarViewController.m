@@ -28,8 +28,6 @@
 @import WireExtensionComponents;
 #import "ConfirmAssetViewController.h"
 #import "TextView.h"
-#import "CameraViewController.h"
-#import "UIView+Borders.h"
 #import "UIViewController+Errors.h"
 
 #import "ZClientViewController.h"
@@ -46,7 +44,6 @@
 @import FLAnimatedImage;
 #import "MediaAsset.h"
 #import "UIView+WR_ExtendedBlockAnimations.h"
-#import "UIView+Borders.h"
 #import "ImageMessageCell.h"
 
 static NSString* ZMLogTag ZM_UNUSED = @"UI";
@@ -71,8 +68,6 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 @end
 
 @interface ConversationInputBarViewController (Location) <LocationSelectionViewControllerDelegate>
-
-- (void)locationButtonPressed:(IconButton *)sender;
 
 @end
 
@@ -122,12 +117,10 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 @property (nonatomic) IconButton *sketchButton;
 @property (nonatomic) IconButton *pingButton;
 @property (nonatomic) IconButton *locationButton;
-@property (nonatomic) IconButton *sendButton;
 @property (nonatomic) IconButton *ephemeralIndicatorButton;
 @property (nonatomic) IconButton *emojiButton;
 @property (nonatomic) IconButton *markdownButton;
 @property (nonatomic) IconButton *gifButton;
-@property (nonatomic) IconButton *hourglassButton;
 
 @property (nonatomic) UIGestureRecognizer *singleTapGestureRecognizer;
 
@@ -153,17 +146,26 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 
 @implementation ConversationInputBarViewController
 
+
+/**
+ init with a ZMConversation objcet
+
+ @param conversation provide nil only for tests
+ @return a ConversationInputBarViewController
+ */
 - (instancetype)initWithConversation:(ZMConversation *)conversation
 {
     self = [super init];
     if (self) {
-        self.conversation = conversation;
-        self.sendController = [[ConversationInputBarSendController alloc] initWithConversation:self.conversation];
-        self.conversationObserverToken = [ConversationChangeInfo addObserver:self forConversation:self.conversation];
+        if (conversation != nil) {
+            self.conversation = conversation;
+            self.sendController = [[ConversationInputBarSendController alloc] initWithConversation:self.conversation];
+            self.conversationObserverToken = [ConversationChangeInfo addObserver:self forConversation:self.conversation];
+            self.typingObserverToken = [conversation addTypingObserver:self];
+            self.typingUsers = conversation.typingUsers;
+        }
         self.sendButtonState = [[ConversationInputBarButtonState alloc] init];
-        self.typingObserverToken = [conversation addTypingObserver:self];
-        self.typingUsers = conversation.typingUsers;
-        
+
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardDidHide:) name:UIKeyboardDidHideNotification object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didEnterBackground:) name:UIApplicationDidEnterBackgroundNotification object:nil];
         
@@ -177,7 +179,6 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 
 - (void)dealloc
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
     [NSObject cancelPreviousPerformRequestsWithTarget:self];
 }
 
@@ -200,7 +201,6 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
     [self createInputBar]; // Creates all input bar buttons
     [self createSendButton];
     [self createEphemeralIndicatorButton];
-//    [self createEmojiButton];
     [self createMarkdownButton];
 
     [self createHourglassButton];
@@ -225,11 +225,13 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
     [self.gifButton addTarget:self action:@selector(giphyButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
     [self.locationButton addTarget:self action:@selector(locationButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
     
-    if (self.conversationObserverToken == nil) {
+    if (self.conversationObserverToken == nil && self.conversation != nil) {
         self.conversationObserverToken = [ConversationChangeInfo addObserver:self forConversation:self.conversation];
     }
-    
-    if (self.userObserverToken == nil && self.conversation.connectedUser != nil) {
+
+    if (self.userObserverToken == nil &&
+        self.conversation.connectedUser != nil
+        && ZMUserSession.sharedSession != nil) {
         self.userObserverToken = [UserChangeInfo addObserver:self forUser:self.conversation.connectedUser userSession:ZMUserSession.sharedSession];
     }
     
@@ -237,7 +239,7 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
     [self updateInputBarVisibility];
     [self updateTypingIndicatorVisibility];
     [self updateWritingStateAnimated:NO];
-    [self updateButtonIconsForEphemeral];
+    [self updateButtonIcons];
     [self updateAvailabilityPlaceholder];
 }
 
@@ -245,7 +247,6 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 {
     [super viewWillAppear:animated];
     [self updateRightAccessoryView];
-    [self updateButtonIconsForEphemeral];
     [self.inputBar updateReturnKey];
     [self.inputBar updateEphemeralState];
 }
@@ -360,34 +361,13 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 
     [self.audioRecordViewContainer addSubview:self.audioRecordViewController.view];
 
-    [self.audioRecordViewContainer autoPinEdge:ALEdgeLeading toEdge:ALEdgeLeading ofView:self.inputBar.buttonContainer];
-    
     CGRect recordButtonFrame = [self.inputBar convertRect:self.audioButton.bounds fromView:self.audioButton];
     CGFloat width = CGRectGetMaxX(recordButtonFrame) + 56;
     [self.audioRecordViewController.view autoSetDimension:ALDimensionWidth toSize:width];
 
+    [self.audioRecordViewController.view autoPinEdgeToSuperviewEdge:ALEdgeLeading];
     [self.audioRecordViewController.view autoPinEdgeToSuperviewEdge:ALEdgeBottom];
     [self.audioRecordViewController.view autoPinEdge:ALEdgeTop toEdge:ALEdgeTop ofView:self.inputBar withOffset:0.5];
-}
-
-- (void)createSendButton
-{
-    self.sendButton = [IconButton iconButtonDefault];
-    self.sendButton.translatesAutoresizingMaskIntoConstraints = NO;
-
-    self.sendButton.accessibilityIdentifier = @"sendButton";
-    self.sendButton.adjustsImageWhenHighlighted = NO;
-    self.sendButton.adjustBackgroundImageWhenHighlighted = YES;
-    self.sendButton.cas_styleClass = @"send-button";
-    self.sendButton.hitAreaPadding = CGSizeMake(30, 30);
-
-    [self.inputBar.rightAccessoryView addSubview:self.sendButton];
-    CGFloat edgeLength = 28;
-    [self.sendButton autoSetDimensionsToSize:CGSizeMake(edgeLength, edgeLength)];
-    [self.sendButton autoPinEdgeToSuperviewEdge:ALEdgeLeading];
-    [self.sendButton autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:14];
-    CGFloat rightInset = (UIView.conversationLayoutMargins.left - edgeLength) / 2;
-    [self.sendButton autoPinEdgeToSuperviewEdge:ALEdgeTrailing withInset:rightInset relation:NSLayoutRelationGreaterThanOrEqual];
 }
 
 - (void)createEphemeralIndicatorButton
@@ -399,11 +379,13 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
     self.ephemeralIndicatorButton.adjustsTitleWhenHighlighted = YES;
     self.ephemeralIndicatorButton.adjustsBorderColorWhenHighlighted = YES;
 
-    [self.inputBar.rightAccessoryView addSubview:self.ephemeralIndicatorButton];
+    [self.inputBar.rightAccessoryStackView insertArrangedSubview:self.ephemeralIndicatorButton atIndex:0];
+    [self.ephemeralIndicatorButton autoSetDimensionsToSize:CGSizeMake(InputBar.rightIconSIze, InputBar.rightIconSIze)];
 
-    [self.ephemeralIndicatorButton autoSetDimensionsToSize:CGSizeMake(32, 32)];
-    [self.ephemeralIndicatorButton autoAlignAxis:ALAxisHorizontal toSameAxisOfView:self.sendButton];
-    [self.ephemeralIndicatorButton autoPinEdge:ALEdgeTrailing toEdge:ALEdgeTrailing ofView:self.sendButton];
+    [self.ephemeralIndicatorButton setTitleColor:[UIColor wr_colorFromColorScheme:ColorSchemeColorLightGraphite]
+                                        forState:UIControlStateDisabled];
+    [self.ephemeralIndicatorButton setTitleColor:[UIColor accentColor]
+                                        forState:UIControlStateNormal];
 
     [self updateEphemeralIndicatorButtonTitle:self.ephemeralIndicatorButton];
 }
@@ -411,7 +393,7 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 - (void)createEmojiButton
 {
     const CGFloat senderDiameter = 28;
-    
+
     self.emojiButton = IconButton.iconButtonCircular;
     self.emojiButton.translatesAutoresizingMaskIntoConstraints = NO;
     self.emojiButton.accessibilityIdentifier = @"emojiButton";
@@ -425,7 +407,7 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 - (void)createMarkdownButton
 {
     const CGFloat senderDiameter = 28;
-    
+
     self.markdownButton = IconButton.iconButtonCircular;
     self.markdownButton.translatesAutoresizingMaskIntoConstraints = NO;
     self.markdownButton.accessibilityIdentifier = @"markdownButton";
@@ -444,11 +426,9 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 
     self.hourglassButton.accessibilityIdentifier = @"ephemeralTimeSelectionButton";
     self.hourglassButton.cas_styleClass = @"hourglass";
-    [self.inputBar.rightAccessoryView addSubview:self.hourglassButton];
+    [self.inputBar.rightAccessoryStackView addArrangedSubview:self.hourglassButton];
 
-    [self.hourglassButton autoAlignAxis:ALAxisHorizontal toSameAxisOfView:self.sendButton];
-    [self.hourglassButton autoPinEdge:ALEdgeLeft toEdge:ALEdgeLeft ofView:self.sendButton withOffset:0];
-    [self.hourglassButton autoPinEdge:ALEdgeTrailing toEdge:ALEdgeTrailing ofView:self.sendButton withOffset:0];
+    [self.hourglassButton autoSetDimensionsToSize:CGSizeMake(InputBar.rightIconSIze, InputBar.rightIconSIze)];
 }
 
 - (void)createTypingIndicatorView
@@ -503,52 +483,56 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
     [self.sendButtonState updateWithTextLength:trimmed.length
                                        editing:nil != self.editingMessage
                                    markingDown:self.inputBar.isMarkingDown
-                            destructionTimeout:self.conversation.messageDestructionTimeout
+                            destructionTimeout:self.conversation.messageDestructionTimeoutValue
                               conversationType:self.conversation.conversationType
-                                          mode:self.mode];
+                                          mode:self.mode
+               syncedMessageDestructionTimeout:self.conversation.hasSyncedMessageDestructionTimeout];
 
     self.sendButton.hidden = self.sendButtonState.sendButtonHidden;
     self.hourglassButton.hidden = self.sendButtonState.hourglassButtonHidden;
     self.ephemeralIndicatorButton.hidden = self.sendButtonState.ephemeralIndicatorButtonHidden;
+    self.ephemeralIndicatorButton.enabled = self.sendButtonState.ephemeralIndicatorButtonEnabled;
 
     [self.ephemeralIndicatorButton setBackgroundImage:self.conversation.timeoutImage forState:UIControlStateNormal];
+    [self.ephemeralIndicatorButton setBackgroundImage:self.conversation.disabledTimeoutImage
+                                             forState:UIControlStateDisabled];
 }
 
-- (void)updateButtonIconsForEphemeral
+- (void)updateButtonIcons
 {
-    [self.audioButton setIcon:self.sendButtonState.ephemeral ? ZetaIconTypeMicrophoneEphemeral : ZetaIconTypeMicrophone
+    [self.audioButton setIcon:ZetaIconTypeMicrophone
                      withSize:ZetaIconSizeTiny
                      forState:UIControlStateNormal];
     
-    [self.videoButton setIcon:self.sendButtonState.ephemeral ? ZetaIconTypeVideoMessageEphemeral : ZetaIconTypeVideoMessage
+    [self.videoButton setIcon:ZetaIconTypeVideoMessage
                      withSize:ZetaIconSizeTiny
                      forState:UIControlStateNormal];
     
-    [self.photoButton setIcon:self.sendButtonState.ephemeral ? ZetaIconTypeCameraLensEphemeral : ZetaIconTypeCameraLens
+    [self.photoButton setIcon:ZetaIconTypeCameraLens
                      withSize:ZetaIconSizeTiny
                      forState:UIControlStateNormal];
     
-    [self.uploadFileButton setIcon:self.sendButtonState.ephemeral ? ZetaIconTypePaperclipEphemeral : ZetaIconTypePaperclip
+    [self.uploadFileButton setIcon:ZetaIconTypePaperclip
                           withSize:ZetaIconSizeTiny
                           forState:UIControlStateNormal];
     
-    [self.sketchButton setIcon:self.sendButtonState.ephemeral ? ZetaIconTypeBrushEphemeral : ZetaIconTypeBrush
+    [self.sketchButton setIcon:ZetaIconTypeBrush
                       withSize:ZetaIconSizeTiny
                       forState:UIControlStateNormal];
     
-    [self.pingButton setIcon:self.sendButtonState.ephemeral ? ZetaIconTypePingEphemeral : ZetaIconTypePing
+    [self.pingButton setIcon:ZetaIconTypePing
                     withSize:ZetaIconSizeTiny
                     forState:UIControlStateNormal];
     
-    [self.locationButton setIcon:self.sendButtonState.ephemeral ? ZetaIconTypeLocationPinEphemeral : ZetaIconTypeLocationPin
+    [self.locationButton setIcon:ZetaIconTypeLocationPin
                         withSize:ZetaIconSizeTiny
                         forState:UIControlStateNormal];
     
-    [self.gifButton setIcon:self.sendButtonState.ephemeral ? ZetaIconTypeGifEphemeral : ZetaIconTypeGif
+    [self.gifButton setIcon:ZetaIconTypeGif
                    withSize:ZetaIconSizeTiny
                    forState:UIControlStateNormal];
  
-    [self.sendButton setIcon:self.sendButtonState.ephemeral ? ZetaIconTypeSendEphemeral : ZetaIconTypeSend
+    [self.sendButton setIcon:ZetaIconTypeSend
                     withSize:ZetaIconSizeTiny
                     forState:UIControlStateNormal];
     
@@ -737,7 +721,6 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
     }
     
     [self updateRightAccessoryView];
-    [self updateButtonIconsForEphemeral];
 }
 
 - (void)selectInputControllerButton:(IconButton *)button
@@ -929,6 +912,11 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 
 - (void)videoButtonPressed:(IconButton *)sender
 {
+    if([[ZMUserSession sharedSession] isCallOngoing]) {
+        [CameraAccess displayCameraAlertForOngoingCallAt:CameraAccessFeatureRecordVideo from:self];
+        return;
+    }
+    
     [Analytics.shared tagMediaAction:ConversationMediaActionVideoMessage inConversation:self.conversation];
     self.videoSendContext = ConversationMediaVideoContextCursorButton;
     [self presentImagePickerWithSourceType:UIImagePickerControllerSourceTypeCamera mediaTypes:@[(id)kUTTypeMovie] allowsEditing:false];
@@ -969,20 +957,6 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 @end
 
 @implementation ConversationInputBarViewController (Location)
-
-- (void)locationButtonPressed:(IconButton *)sender
-{
-    [[Analytics shared] tagMediaAction:ConversationMediaActionLocation inConversation:self.conversation];
-    
-    LocationSelectionViewController *locationSelectionViewController = [[LocationSelectionViewController alloc] initForPopoverPresentation:IS_IPAD_FULLSCREEN];
-    locationSelectionViewController.modalPresentationStyle = UIModalPresentationPopover;
-    UIPopoverPresentationController* popoverPresentationController = locationSelectionViewController.popoverPresentationController;
-    popoverPresentationController.sourceView = sender.superview;
-    popoverPresentationController.sourceRect = sender.frame;
-    locationSelectionViewController.title = self.conversation.displayName;
-    locationSelectionViewController.delegate = self;
-    [self.parentViewController presentViewController:locationSelectionViewController animated:YES completion:nil];
-}
 
 - (void)locationSelectionViewController:(LocationSelectionViewController *)viewController didSelectLocationWithData:(ZMLocationData *)locationData
 {
@@ -1093,6 +1067,11 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 {    
     if (change.participantsChanged || change.connectionStateChanged) {
         [self updateInputBarVisibility];
+    }
+    
+    if (change.destructionTimeoutChanged) {
+        [self updateAccessoryViews];
+        [self updateInputBar];
     }
 }
 

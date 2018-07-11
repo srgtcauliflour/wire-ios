@@ -79,11 +79,6 @@ class SettingsBaseTableViewController: UIViewController {
         view.addSubview(footerContainer)
         footerContainer.addSubview(footerSeparator)
         footerSeparator.inverse = true
-
-        if #available(iOS 11.0, *) {
-        } else {
-            tableView.contentInset = UIEdgeInsets(top: -32, left: 0, bottom: 0, right: 0)
-        }
     }
 
     private func createConstraints() {
@@ -117,6 +112,10 @@ class SettingsBaseTableViewController: UIViewController {
             footer.edges == container.edges
         }
     }
+
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        return .lightContent
+    }
 }
 
 extension SettingsBaseTableViewController: UITableViewDelegate, UITableViewDataSource {
@@ -144,7 +143,6 @@ extension SettingsBaseTableViewController: UITableViewDelegate, UITableViewDataS
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) { }
 
 }
-
 
 class SettingsTableViewController: SettingsBaseTableViewController {
 

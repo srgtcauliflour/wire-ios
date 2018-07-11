@@ -42,6 +42,7 @@ final class TeamCreationFlowController: NSObject {
     var syncToken: Any?
     var sessionManagerToken: Any?
     let tracker = AnalyticsTracker(context: AnalyticsContextRegistrationEmail)!
+    var marketingConsent: Bool?
 
     init(navigationController: UINavigationController, registrationStatus: RegistrationStatus) {
         self.navigationController = navigationController
@@ -122,9 +123,17 @@ extension TeamCreationFlowController {
         }
     }
 
+    fileprivate func showMarketingConsentDialog(presentViewController: UIViewController) {
+        UIAlertController.newsletterSubscriptionDialogWasDisplayed = false
+        UIAlertController.showNewsletterSubscriptionDialogIfNeeded(presentViewController: presentViewController) { [weak self] marketingConsent in
+            self?.marketingConsent = marketingConsent
+        }
+    }
+
     fileprivate func pushController(for state: TeamCreationState) {
 
         var stepDescription: TeamCreationStepDescription?
+        var needsToShowMarketingConsentDialog = false
 
         switch state {
         case .setTeamName:
@@ -135,6 +144,7 @@ extension TeamCreationFlowController {
             stepDescription = VerifyEmailStepDescription(email: email, delegate: self)
         case .setFullName:
             stepDescription = SetFullNameStepDescription()
+            needsToShowMarketingConsentDialog = true
         case .setPassword:
             stepDescription = SetPasswordStepDescription()
         case .createTeam:
@@ -148,14 +158,21 @@ extension TeamCreationFlowController {
 
         if let description = stepDescription {
             let controller = createViewController(for: description)
+
+            let completion = {
+                if needsToShowMarketingConsentDialog {
+                    self.showMarketingConsentDialog(presentViewController: self.navigationController)
+                }
+            }
+
             if let current = currentController, current.stepDescription.shouldSkipFromNavigation() {
                 currentController = controller
                 let withoutLast = navigationController.viewControllers.dropLast()
                 let controllers = withoutLast + [controller]
-                navigationController.setViewControllers(Array(controllers), animated: true)
+                navigationController.setViewControllers(Array(controllers), animated: true, completion: completion)
             } else {
                 currentController = controller
-                navigationController.pushViewController(controller, animated: true)
+                navigationController.pushViewController(controller, animated: true, completion: completion)
             }
         }
     }
@@ -263,6 +280,10 @@ extension TeamCreationFlowController: TeamMemberInviteViewControllerDelegate {
     
     func teamInviteViewControllerDidFinish(_ controller: TeamMemberInviteViewController) {
         registrationDelegate?.registrationViewControllerDidCompleteRegistration()
+
+        if let marketingConsent = self.marketingConsent, let user = ZMUser.selfUser(), let userSession = ZMUserSession.shared() {
+            user.setMarketingConsent(to: marketingConsent, in: userSession, completion: { _ in })
+        }
     }
     
 }

@@ -51,6 +51,7 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 @property (nonatomic) ZMIncompleteRegistrationUser *unregisteredUser;
 @property (nonatomic) id authToken;
 @property (nonatomic) id<ZMRegistrationObserverToken> registrationToken;
+@property (nonatomic) BOOL marketingConsent;
 
 @end
 
@@ -188,7 +189,7 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
     else if ([viewController isKindOfClass:[NameStepViewController class]]) {
         [self.analyticsTracker tagEnteredName];
         [self presentPictureStepController];
-        [[UIApplication sharedApplication] registerForRemoteNotifications];
+        [[SessionManager shared] configureUserNotifications];
     }
     else if ([viewController isKindOfClass:[ProfilePictureStepViewController class]]) {
         ProfilePictureStepViewController *step = (ProfilePictureStepViewController *)viewController;
@@ -198,6 +199,7 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
         [[UnauthenticatedSession sharedSession] registerUser:completeUser];
         
         self.navigationController.showLoadingView = YES;
+        [[ZMUserSession sharedSession] submitMarketingConsentWith:self.marketingConsent];
     }
     else {
         [self.formStepDelegate didCompleteFormStep:self];
@@ -345,7 +347,13 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 {
     [self.analyticsTracker tagVerifiedPhone];
     self.navigationController.showLoadingView = NO;
-    [self presentTermsOfUseStepController];
+
+    [UIAlertController showNewsletterSubscriptionDialogWithOver: self
+                                              completionHandler: ^(BOOL marketingConsent) {
+        self.marketingConsent = marketingConsent;
+
+        [self presentTermsOfUseStepController];
+    }];
 }
 
 - (void)phoneVerificationDidFail:(NSError *)error

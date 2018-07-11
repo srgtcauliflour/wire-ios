@@ -20,11 +20,12 @@ import Foundation
 import UIKit
 import Classy
 
-@objc
-class AppRootViewController: UIViewController {
+@objcMembers class AppRootViewController: UIViewController {
 
     public let mainWindow: UIWindow
-    public let overlayWindow: UIWindow
+    public let callWindow: CallWindow
+    public let overlayWindow: NotificationWindow
+
     public fileprivate(set) var sessionManager: SessionManager?
     public fileprivate(set) var quickActionsManager: QuickActionsManager?
     
@@ -78,12 +79,9 @@ class AppRootViewController: UIViewController {
 
         mainWindow = UIWindow(frame: UIScreen.main.bounds)
         mainWindow.accessibilityIdentifier = "ZClientMainWindow"
-
-        overlayWindow = PassthroughWindow(frame: UIScreen.main.bounds)
-        overlayWindow.backgroundColor = .clear
-        overlayWindow.windowLevel = UIWindowLevelStatusBar + 1
-        overlayWindow.accessibilityIdentifier = "ZClientNotificationWindow"
-        overlayWindow.rootViewController = NotificationWindowRootViewController()
+        
+        callWindow = CallWindow(frame: UIScreen.main.bounds)
+        overlayWindow = NotificationWindow(frame: UIScreen.main.bounds)
 
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
 
@@ -95,6 +93,7 @@ class AppRootViewController: UIViewController {
         // not possible because it has to be below the status bar.
         mainWindow.rootViewController = self
         mainWindow.makeKeyAndVisible()
+        callWindow.makeKeyAndVisible()
         overlayWindow.makeKeyAndVisible()
         mainWindow.makeKey()
 
@@ -109,7 +108,7 @@ class AppRootViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(onContentSizeCategoryChange), name: Notification.Name.UIContentSizeCategoryDidChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(applicationWillEnterForeground), name: Notification.Name.UIApplicationWillEnterForeground, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(applicationDidEnterBackground), name: Notification.Name.UIApplicationDidEnterBackground, object: nil)
-         NotificationCenter.default.addObserver(self, selector: #selector(applicationDidBecomeActive), name: Notification.Name.UIApplicationDidBecomeActive, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(applicationDidBecomeActive), name: Notification.Name.UIApplicationDidBecomeActive, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(onUserGrantedAudioPermissions), name: Notification.Name.UserGrantedAudioPermissions, object: nil)
 
         transition(to: .headless)
@@ -150,6 +149,7 @@ class AppRootViewController: UIViewController {
             self.sessionManagerDestroyedSessionObserverToken = sessionManager.addSessionManagerDestroyedSessionObserver(self)
             self.sessionManager?.localNotificationResponder = self
             self.sessionManager?.requestToOpenViewDelegate = self
+            self.sessionManager?.switchingDelegate = self
             sessionManager.updateCallNotificationStyleFromSettings()
             sessionManager.useConstantBitRateAudio = Settings.shared().callingConstantBitRate
             sessionManager.start(launchOptions: launchOptions)
@@ -233,7 +233,7 @@ class AppRootViewController: UIViewController {
                 registrationViewController.signInError = error
                 viewController = registrationViewController
             }
-            else if (addingNewAccount) {
+            else if addingNewAccount {
                 // When we show the landing controller we want it to be nested in navigation controller
                 let landingViewController = LandingViewController()
                 landingViewController.delegate = self
@@ -256,6 +256,12 @@ class AppRootViewController: UIViewController {
             executeAuthenticatedBlocks()
             let clientViewController = ZClientViewController()
             clientViewController.isComingFromRegistration = completedRegistration
+
+            /// show the dialog only when lastAppState is .unauthenticated, i.e. the user login to a new device
+            clientViewController.needToShowDataUsagePermissionDialog = false
+            if case .unauthenticated(_) = appStateController.lastAppState {
+                clientViewController.needToShowDataUsagePermissionDialog = true
+            }
 
             Analytics.shared().team = ZMUser.selfUser().team
 
@@ -326,7 +332,7 @@ class AppRootViewController: UIViewController {
     func prepare(for appState: AppState, completionHandler: @escaping () -> Void) {
 
         if appState == .authenticated(completedRegistration: false) {
-            (overlayWindow.rootViewController as? NotificationWindowRootViewController)?.transitionToLoggedInSession()
+            callWindow.callController.transitionToLoggedInSession()
         } else {
             overlayWindow.rootViewController = NotificationWindowRootViewController()
         }
@@ -334,7 +340,7 @@ class AppRootViewController: UIViewController {
         if !isClassyInitialized && isClassyRequired(for: appState) {
             isClassyInitialized = true
 
-            let windows = [mainWindow, overlayWindow]
+            let windows = [mainWindow, callWindow, overlayWindow]
             DispatchQueue.main.async {
                 self.setupClassy(with: windows)
                 completionHandler()
@@ -359,7 +365,7 @@ class AppRootViewController: UIViewController {
 
     func setupClassy(with windows: [UIWindow]) {
 
-        let colorScheme = ColorScheme.default()
+        let colorScheme = ColorScheme.default
         colorScheme.accentColor = UIColor.accent()
         colorScheme.variant = ColorSchemeVariant(rawValue: Settings.shared().colorScheme.rawValue) ?? .light
 
@@ -370,7 +376,7 @@ class AppRootViewController: UIViewController {
         CASStyler.default().apply(fontScheme: fontScheme)
     }
 
-    func onContentSizeCategoryChange() {
+    @objc func onContentSizeCategoryChange() {
         Message.invalidateMarkdownStyle()
         NSAttributedString.wr_flushCellParagraphStyleCache()
         ConversationListCell.invalidateCachedCellSize()
@@ -505,7 +511,7 @@ extension AppRootViewController: SessionManagerCreatedSessionObserver, SessionMa
 
 extension AppRootViewController {
 
-    func onUserGrantedAudioPermissions() {
+    @objc func onUserGrantedAudioPermissions() {
         sessionManager?.updateCallNotificationStyleFromSettings()
     }
 }
@@ -536,9 +542,32 @@ extension AppRootViewController: LandingViewControllerDelegate {
     }
 }
 
+// MARK: - Ask user if they want want switch account if there's an ongoing call
+
+extension AppRootViewController: SessionManagerSwitchingDelegate {
+    
+    func confirmSwitchingAccount(completion: @escaping (Bool) -> Void) {
+        
+        guard let session = ZMUserSession.shared(), session.isCallOngoing else { return completion(true) }
+        guard let topmostController = UIApplication.shared.wr_topmostController() else { return completion(false) }
+        
+        let alert = UIAlertController(title: "self.settings.switch_account.title".localized, message: nil, preferredStyle: .actionSheet)
+        alert.addAction(UIAlertAction(title: "self.settings.switch_account.action".localized, style: .default, handler: { [weak self] (action) in
+            self?.sessionManager?.activeUserSession?.callCenter?.endAllCalls()
+            completion(true)
+        }))
+        alert.addAction(UIAlertAction(title: "general.cancel".localized, style: .cancel, handler: { (action) in
+            completion(false)
+        }))
+        
+        topmostController.present(alert, animated: true, completion: nil)
+    }
+    
+}
+
 public extension SessionManager {
     
-    var firstAuthenticatedAccount: Account? {
+    @objc var firstAuthenticatedAccount: Account? {
         
         if let selectedAccount = accountManager.selectedAccount {
             if selectedAccount.isAuthenticated {

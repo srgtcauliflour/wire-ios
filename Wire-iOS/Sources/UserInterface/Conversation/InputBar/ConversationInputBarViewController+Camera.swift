@@ -23,7 +23,7 @@ import Photos
 
 private let zmLog = ZMSLog(tag: "UI")
 
-@objc class FastTransitioningDelegate: NSObject, UIViewControllerTransitioningDelegate {
+@objcMembers class FastTransitioningDelegate: NSObject, UIViewControllerTransitioningDelegate {
     static let sharedDelegate = FastTransitioningDelegate()
     
     func animationController(forPresented presented: UIViewController, presenting: UIViewController, source: UIViewController) -> UIViewControllerAnimatedTransitioning? {
@@ -82,10 +82,10 @@ extension ConversationInputBarViewController: CameraKeyboardViewControllerDelega
 
                     ///arrow point to camera button.
                     popover?.permittedArrowDirections = .down
-                    if let parentView = self.parent?.view {
-                        let buttonCenter = self.photoButton.convert(self.photoButton.center, to: parentView)
-                        popover?.sourceRect = CGRect(origin: buttonCenter, size: .zero)
 
+                    popover?.sourceRect = self.photoButton.popoverSourceRect(from: self)
+
+                    if let parentView = self.parent?.view {
                         videoEditor.preferredContentSize = parentView.frame.size
                     }
                 }

@@ -94,7 +94,6 @@
 - (void)dealloc
 {
     [AVSMediaManager.sharedInstance unregisterMedia:self.mediaPlaybackManager];
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (instancetype)init
@@ -130,6 +129,8 @@
         [[GroupConversationCell appearanceWhenContainedInInstancesOfClasses:@[StartUIView.class]] setColorSchemeVariant:ColorSchemeVariantDark];
         [[GroupConversationCell appearanceWhenContainedInInstancesOfClasses:@[StartUIView.class]] setContentBackgroundColor:UIColor.clearColor];
         [[UIView appearanceWhenContainedInInstancesOfClasses:@[UIAlertController.class]] setTintColor:[ColorScheme.defaultColorScheme colorWithName:ColorSchemeColorTextForeground variant:ColorSchemeVariantLight]];
+
+        [self setupConversationListViewController];
     }
     return self;
 }
@@ -143,8 +144,8 @@
     
     self.view.backgroundColor = [UIColor blackColor];
 
-    [self setupConversationListViewController];
-    
+    [self.conversationListViewController view];
+
     self.splitViewController = [[SplitViewController alloc] init];
     self.splitViewController.delegate = self;
     [self addChildViewController:self.splitViewController];
@@ -152,9 +153,10 @@
     self.splitViewController.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:self.splitViewController.view];
     
-    [self.splitViewController.view autoPinEdgesToSuperviewEdgesWithInsets:UIEdgeInsetsZero];
+    [self createTopViewConstraints];
     [self.splitViewController didMoveToParentViewController:self];
-    
+    [self updateSplitViewTopConstraint];
+
     self.splitViewController.view.backgroundColor = [UIColor clearColor];
     
     [self createBackgroundViewController];
@@ -204,7 +206,10 @@
 
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
-    if (self.splitViewController.layoutSize == SplitViewControllerLayoutSizeCompact) {
+    if (nil != self.topOverlayViewController) {
+        return self.topOverlayViewController.preferredStatusBarStyle;
+    }
+    else if (self.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClassCompact) {
         if (self.presentedViewController) {
             return self.presentedViewController.preferredStatusBarStyle;
         }
@@ -213,12 +218,15 @@
         }
     }
     else {
-        return UIStatusBarStyleDefault;
+        return UIStatusBarStyleLightContent;
     }
 }
 
 - (BOOL)prefersStatusBarHidden {
-    if (self.splitViewController.layoutSize == SplitViewControllerLayoutSizeCompact) {
+    if (nil != self.topOverlayViewController) {
+        return self.topOverlayViewController.prefersStatusBarHidden;
+    }
+    else if (self.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClassCompact) {
         if (self.presentedViewController) {
             return self.presentedViewController.prefersStatusBarHidden;
         }
@@ -245,7 +253,9 @@
             [self attemptToLoadLastViewedConversationWithFocus:NO animated:NO];
         }
     }
-    
+
+    [self updateSplitViewTopConstraint];
+    [[UIApplication sharedApplication] wr_updateStatusBarForCurrentControllerAnimated:YES onlyFullScreen:NO];
     [self.view setNeedsLayout];
 }
 
@@ -255,7 +265,7 @@
 {
     self.conversationListViewController = [[ConversationListViewController alloc] init];
     self.conversationListViewController.isComingFromRegistration = self.isComingFromRegistration;
-    [self.conversationListViewController view];
+    self.conversationListViewController.needToShowDataUsagePermissionDialog = NO;
 }
 
 #pragma mark - ZMUserObserver
@@ -401,52 +411,12 @@
 
 }
 
-- (void)openDetailScreenForUserClient:(UserClient *)client
-{
-    if (client.user.isSelfUser) {
-        SettingsClientViewController *userClientViewController = [[SettingsClientViewController alloc] initWithUserClient:client credentials:nil];
-        UINavigationController *navWrapperController = [[SettingsStyleNavigationController alloc] initWithRootViewController:userClientViewController];
-
-        navWrapperController.modalPresentationStyle = UIModalPresentationFormSheet;
-        [self presentViewController:navWrapperController animated:YES completion:nil];
-    }
-    else {
-        ProfileClientViewController* userClientViewController = [[ProfileClientViewController alloc] initWithClient:client];
-        userClientViewController.modalPresentationStyle = UIModalPresentationFormSheet;
-        [self presentViewController:userClientViewController animated:YES completion:nil];
-    }
-}
-
 - (void)openDetailScreenForConversation:(ZMConversation *)conversation
 {
     GroupDetailsViewController *controller = [[GroupDetailsViewController alloc] initWithConversation:conversation];
     UINavigationController *navController =  controller.wrapInNavigationController;
     navController.modalPresentationStyle = UIModalPresentationFormSheet;
     [self presentViewController:navController animated:YES completion:nil];
-}
-
-- (void)openClientListScreenForUser:(ZMUser *)user
-{
-    if (user.isSelfUser) {
-        ClientListViewController *clientListViewController = [[ClientListViewController alloc] initWithClientsList:user.clients.allObjects credentials:nil detailedView:YES showTemporary:YES];
-        clientListViewController.view.backgroundColor = [UIColor blackColor];
-        clientListViewController.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(dismissClientListController:)];
-        UINavigationController *navWrapperController = [[SettingsStyleNavigationController alloc] initWithRootViewController:clientListViewController];
-        navWrapperController.modalPresentationStyle = UIModalPresentationFormSheet;
-        [self presentViewController:navWrapperController animated:YES completion:nil];
-        
-    } else {
-        ProfileViewController *profileViewController = [[ProfileViewController alloc] initWithUser:user context:ProfileViewControllerContextDeviceList];
-        if ([self.conversationRootViewController isKindOfClass:ConversationRootViewController.class]) {
-            profileViewController.delegate = (id <ProfileViewControllerDelegate>)[(ConversationRootViewController *)self.conversationRootViewController conversationViewController];
-            profileViewController.viewControllerDismissable = (id <ViewControllerDismissable>)[(ConversationRootViewController *)self.conversationRootViewController conversationViewController];
-        }
-        UINavigationController *navWrapperController = [[UINavigationController alloc] initWithRootViewController:profileViewController];
-        navWrapperController.modalPresentationStyle = UIModalPresentationFormSheet;
-        navWrapperController.navigationBarHidden = YES;
-        [self presentViewController:navWrapperController animated:YES completion:nil];
-    }
-
 }
 
 - (void)dismissClientListController:(id)sender
@@ -456,31 +426,38 @@
 
 #pragma mark - Animated conversation switch
 
+- (void)minimizeCallOverlayWithCompletion:(dispatch_block_t)completion
+{
+    [AppDelegate.sharedAppDelegate.callWindowRootViewController minimizeOverlayWithCompletion:completion];
+}
+
 - (void)dismissAllModalControllersWithCallback:(dispatch_block_t)callback
 {
-    if (self.splitViewController.rightViewController.presentedViewController != nil) {
-        [self.splitViewController.rightViewController dismissViewControllerAnimated:NO completion:callback];
-    }
-    else if (self.conversationListViewController.presentedViewController != nil) {
-        // This is a workaround around the fact that the transitioningDelegate of the settings
-        // view controller is not called when the transition is not being performed animated.
-        // This sounds like a bug in UIKit (Radar incoming) as I would expect the custom animator
-        // being called with `transitionContext.isAnimated == false`. As this is not the case
-        // we have to restore the proper pre-presentation state here.
-        UIView *conversationView = self.conversationListViewController.view;
-        if (!CATransform3DIsIdentity(conversationView.layer.transform) || 1 != conversationView.alpha) {
-            conversationView.layer.transform = CATransform3DIdentity;
-            conversationView.alpha = 1;
+    [self minimizeCallOverlayWithCompletion:^{
+        if (self.splitViewController.rightViewController.presentedViewController != nil) {
+            [self.splitViewController.rightViewController dismissViewControllerAnimated:NO completion:callback];
         }
-        
-        [self.conversationListViewController.presentedViewController dismissViewControllerAnimated:NO completion:callback];
-    }
-    else if (self.presentedViewController != nil) {
-        [self dismissViewControllerAnimated:NO completion:callback];
-    }
-    else if (callback) {
-        callback();
-    }
+        else if (self.conversationListViewController.presentedViewController != nil) {
+            // This is a workaround around the fact that the transitioningDelegate of the settings
+            // view controller is not called when the transition is not being performed animated.
+            // This sounds like a bug in UIKit (Radar incoming) as I would expect the custom animator
+            // being called with `transitionContext.isAnimated == false`. As this is not the case
+            // we have to restore the proper pre-presentation state here.
+            UIView *conversationView = self.conversationListViewController.view;
+            if (!CATransform3DIsIdentity(conversationView.layer.transform) || 1 != conversationView.alpha) {
+                conversationView.layer.transform = CATransform3DIdentity;
+                conversationView.alpha = 1;
+            }
+            
+            [self.conversationListViewController.presentedViewController dismissViewControllerAnimated:NO completion:callback];
+        }
+        else if (self.presentedViewController != nil) {
+            [self dismissViewControllerAnimated:NO completion:callback];
+        }
+        else if (callback) {
+            callback();
+        }
+    }];
 }
 
 #pragma mark - Getters/Setters
@@ -495,8 +472,18 @@
 - (void)setIsComingFromRegistration:(BOOL)isComingFromRegistration
 {
     _isComingFromRegistration = isComingFromRegistration;
-    
+
     self.conversationListViewController.isComingFromRegistration = self.isComingFromRegistration;
+}
+
+- (BOOL)needToShowDataUsagePermissionDialog
+{
+    return self.conversationListViewController.needToShowDataUsagePermissionDialog;
+}
+
+- (void)setNeedToShowDataUsagePermissionDialog:(BOOL)needToShowDataUsagePermissionDialog
+{
+    self.conversationListViewController.needToShowDataUsagePermissionDialog = needToShowDataUsagePermissionDialog;
 }
 
 - (BOOL)isConversationViewVisible

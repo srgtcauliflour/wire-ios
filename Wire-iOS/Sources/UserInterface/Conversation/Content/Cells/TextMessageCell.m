@@ -26,7 +26,6 @@
 #import "WireSyncEngine+iOS.h"
 #import "ZMConversation+Additions.h"
 #import "Message+Formatting.h"
-#import "UIView+Borders.h"
 #import "Constants.h"
 #import "AnalyticsTracker+Media.h"
 #import "LinkAttachmentViewControllerFactory.h"
@@ -142,7 +141,6 @@
     
     [self.editedImageView autoPinEdge:ALEdgeLeft toEdge:ALEdgeRight ofView:self.authorLabel withOffset:8];
     [self.editedImageView autoAlignAxis:ALAxisHorizontal toSameAxisOfView:self.authorLabel];
-    [self.countdownContainerView autoPinEdge:ALEdgeTop toEdge:ALEdgeTop ofView:self.messageTextView];
 }
 
 - (void)updateTextMessageConstraintConstants
@@ -223,7 +221,7 @@
             articleView.authorLabel.numberOfLines = 1;
             
             if(showImage) {
-                articleView.imageHeight = [UIScreen isCompact] ? 75.0 : 125.0;
+                articleView.imageHeight = [[UIScreen mainScreen] isCompact] ? 75.0 : 125.0;
             }
         }
         articleView.translatesAutoresizingMaskIntoConstraints = NO;
