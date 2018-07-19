@@ -31,6 +31,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) ZMConversation *conversation;
 @property (nonatomic, getter=isFocused) BOOL focused;
 @property (nonatomic, readonly) ConversationCallController *startCallController;
+@property (nonatomic) ConversationContentViewController *contentViewController;
+
+@property (nonatomic) CGFloat lastContentOffset;
 
 @end
 
