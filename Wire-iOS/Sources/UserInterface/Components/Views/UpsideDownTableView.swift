@@ -20,11 +20,16 @@ import Foundation
 
 class UpsideDownTableView: UITableView {
     override init(frame: CGRect, style: UITableViewStyle) {
+        isKeyboardDismissing = false
+
         super.init(frame: frame, style: style)
 
         UIView.performWithoutAnimation({
             self.transform = CGAffineTransform(scaleX: 1, y: -1)
         })
+
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardMoved), name: .UIKeyboardWillChangeFrame, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardMoved), name: .UIKeyboardDidChangeFrame, object: nil)
 
     }
 
@@ -32,10 +37,14 @@ class UpsideDownTableView: UITableView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    @objc fileprivate func keyboardMoved() {
+        isKeyboardDismissing = false
+    }
+
     @objc public var correctedContentInset: UIEdgeInsets {
         get {
-        let insets = super.contentInset
-        return UIEdgeInsetsMake(insets.bottom, insets.left, insets.top, insets.right)
+            let insets = super.contentInset
+            return UIEdgeInsetsMake(insets.bottom, insets.left, insets.top, insets.right)
         }
 
         set {
@@ -45,12 +54,27 @@ class UpsideDownTableView: UITableView {
 
     public var correctedScrollIndicatorInsets: UIEdgeInsets {
         get {
-        let insets = super.scrollIndicatorInsets
-        return UIEdgeInsetsMake(insets.bottom, insets.left, insets.top, insets.right)
+            let insets = super.scrollIndicatorInsets
+            return UIEdgeInsetsMake(insets.bottom, insets.left, insets.top, insets.right)
         }
 
         set {
             super.scrollIndicatorInsets = UIEdgeInsetsMake(correctedScrollIndicatorInsets.bottom, correctedScrollIndicatorInsets.left, correctedScrollIndicatorInsets.top, correctedScrollIndicatorInsets.right)
+        }
+    }
+
+    @objc public var isKeyboardDismissing: Bool
+
+    override var contentOffset: CGPoint {
+        get {
+            return super.contentOffset
+        }
+
+        set {
+            guard !self.isKeyboardDismissing else { return }
+
+            ///TODO called by [UIScrollView _updatePanGesture]
+            super.contentOffset = newValue
         }
     }
 
@@ -92,7 +116,7 @@ class UpsideDownTableView: UITableView {
 
     override func dequeueReusableCell(withIdentifier identifier: String, for indexPath: IndexPath) -> UITableViewCell {
         let cell = super.dequeueReusableCell(withIdentifier: identifier, for: indexPath)
-        
+
         cell.transform = CGAffineTransform(scaleX: 1, y: -1)
 
         return cell

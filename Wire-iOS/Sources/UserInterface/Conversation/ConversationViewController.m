@@ -677,8 +677,6 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 
 - (void)keyboardFrameWillChange:(NSNotification *)notification
 {
-    self.lastContentOffset = -1;
-
     // We only respond to keyboard will change frame if the first responder is not the input bar
     if (self.invisibleInputAccessoryView.window == nil) {
         [UIView animateWithKeyboardNotification:notification
@@ -730,19 +728,9 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
     else {
         self.inputBarBottomMargin.constant = -distanceFromBottom;
 
-        CGFloat newOffset = self.contentViewController.tableView.contentOffset.y;
-
-        if (self.lastContentOffset < 0) {
-            self.lastContentOffset = newOffset;
-        }
-
-        if (self.lastContentOffset != newOffset && self.lastContentOffset > 0) {
-            self.contentViewController.tableView.contentOffset = CGPointMake(0, self.lastContentOffset);
-        }
-
-
         [self printDebugInfo];
         [self.view layoutIfNeeded];
+        self.contentViewController.tableView.isKeyboardDismissing = YES;
     }
 
 }
