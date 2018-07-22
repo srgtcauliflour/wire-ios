@@ -48,7 +48,7 @@ class UpsideDownTableView: UITableView {
         }
 
         set {
-            super.contentInset = UIEdgeInsetsMake(contentInset.bottom, contentInset.left, contentInset.top, contentInset.right)
+            super.contentInset = UIEdgeInsetsMake(newValue.bottom, newValue.left, newValue.top, newValue.right)
         }
     }
 
@@ -59,7 +59,10 @@ class UpsideDownTableView: UITableView {
         }
 
         set {
-            super.scrollIndicatorInsets = UIEdgeInsetsMake(correctedScrollIndicatorInsets.bottom, correctedScrollIndicatorInsets.left, correctedScrollIndicatorInsets.top, correctedScrollIndicatorInsets.right)
+            super.scrollIndicatorInsets = UIEdgeInsetsMake(newValue.bottom,
+                                                           newValue.left,
+                                                           newValue.top,
+                                                           newValue.right)
         }
     }
 
