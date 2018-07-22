@@ -28,8 +28,8 @@ class UpsideDownTableView: UITableView {
             self.transform = CGAffineTransform(scaleX: 1, y: -1)
         })
 
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardMoved), name: .UIKeyboardWillChangeFrame, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardMoved), name: .UIKeyboardDidChangeFrame, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardChangedFrame), name: .UIKeyboardWillChangeFrame, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardChangedFrame), name: .UIKeyboardDidChangeFrame, object: nil)
 
     }
 
@@ -37,7 +37,7 @@ class UpsideDownTableView: UITableView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    @objc fileprivate func keyboardMoved() {
+    @objc fileprivate func keyboardChangedFrame() {
         isKeyboardDismissing = false
     }
 
@@ -71,7 +71,9 @@ class UpsideDownTableView: UITableView {
         }
 
         set {
-            guard !self.isKeyboardDismissing else { return }
+            guard !self.isKeyboardDismissing else {
+                return
+            }
 
             ///TODO called by [UIScrollView _updatePanGesture]
             super.contentOffset = newValue
