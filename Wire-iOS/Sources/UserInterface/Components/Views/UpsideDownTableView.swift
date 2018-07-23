@@ -74,11 +74,11 @@ class UpsideDownTableView: UITableView {
         }
 
         set {
-            guard !self.isKeyboardDismissing else {
+            // When the keyboard is dismissing with pan gesture, this tableView is resizing and the contentOffset is increasing with higer than expect rate. Set isKeyboardDismissing flag to true to stop iOS update contentOffent (called by [UIScrollView _updatePanGesture])
+            guard !isKeyboardDismissing else {
                 return
             }
 
-            ///TODO called by [UIScrollView _updatePanGesture]
             super.contentOffset = newValue
         }
     }
