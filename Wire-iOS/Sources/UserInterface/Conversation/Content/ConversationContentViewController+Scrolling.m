@@ -31,14 +31,25 @@
 {
     CGPoint offset = self.tableView.contentOffset;
     [self.tableView setContentOffset:offset animated:NO];
+    self.tableView.isKeyboardDismissing = false;
 }
 
 #pragma mark - Scroll view delegate
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
+    self.tableView.isKeyboardDismissing = false;
+}
 
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {
     [self removeHighlightsAndMenu];
 }
+
+//- (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset {
+//    ///TODO:
+//    CGPoint * offset = targetContentOffset;
+//
+//}
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
@@ -54,6 +65,8 @@
     if (atTheTop) {
         [self expandMessageWindowUp];
     }
+
+    [self handleDidScroll: scrollView];
 }
 
 - (void)scrollToBottomAnimated:(BOOL)animated

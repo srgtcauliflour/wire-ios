@@ -31,11 +31,17 @@ class UpsideDownTableView: UITableView {
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardChangedFrame), name: .UIKeyboardWillChangeFrame, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardChangedFrame), name: .UIKeyboardDidChangeFrame, object: nil)
 
+//        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: .UIKeyboardWillHide, object: nil)
+
     }
 
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+
+//    @objc fileprivate func keyboardWillHide() {
+//        isKeyboardDismissing = true
+//    }
 
     @objc fileprivate func keyboardChangedFrame() {
         isKeyboardDismissing = false

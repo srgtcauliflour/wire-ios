@@ -526,15 +526,16 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 
 #pragma mark - SwipeNavigationController's panning
 
-- (BOOL)frameworkShouldRecognizePan:(UIPanGestureRecognizer *)gestureRecognizer
-{
-    CGPoint location = [gestureRecognizer locationInView:self.view];
-    if (CGRectContainsPoint([self.view convertRect:self.inputBarController.view.bounds fromView:self.inputBarController.view], location)) {
-        return NO;
-    }
-
-    return YES;
-}
+///TODO: useless?
+//- (BOOL)frameworkShouldRecognizePan:(UIPanGestureRecognizer *)gestureRecognizer
+//{
+//    CGPoint location = [gestureRecognizer locationInView:self.view];
+//    if (CGRectContainsPoint([self.view convertRect:self.inputBarController.view.bounds fromView:self.inputBarController.view], location)) {
+//        return NO;
+//    }
+//
+//    return YES;
+//}
 
 #pragma mark - Application Events & Notifications
 
@@ -669,6 +670,14 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
     [self presentParticipantsViewController:navigationController fromView:sourceView];
 }
 
+- (BOOL)conversationContentViewController:(ConversationContentViewController *)contentViewController scrollPanRegion:(CGPoint) point {
+    ///TODO: return inputBarController's frame
+
+    return  CGRectContainsPoint(self.inputBarController.view.frame, point);
+
+    return YES;
+}
+
 @end
 
 
@@ -729,7 +738,7 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
         self.inputBarBottomMargin.constant = -distanceFromBottom;
 
         [self.view layoutIfNeeded];
-        self.contentViewController.tableView.isKeyboardDismissing = YES;
+//        self.contentViewController.tableView.isKeyboardDismissing = YES;
     }
 
 }

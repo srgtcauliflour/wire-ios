@@ -26,6 +26,30 @@ private var lastPreviewURL: URL?
 
 extension ConversationContentViewController: UIViewControllerPreviewingDelegate {
 
+    @objc public func handleDidScroll(_ scrollView: UIScrollView) {
+        let panGestureRecognizer = scrollView.panGestureRecognizer
+//        guard panGestureRecognizer.state == .moved else { return }
+
+        if(panGestureRecognizer.translation(in: scrollView.superview).y > 0) {
+
+            let location = panGestureRecognizer.location(in: scrollView.superview)
+            if location.y > scrollView.frame.maxY {
+
+//                if self.
+                print("up and out of bound!")
+
+                if self.delegate.conversationContentViewController(self, scrollPanRegion: location) {
+                    tableView.isKeyboardDismissing = false
+                } else {
+                tableView.isKeyboardDismissing = true
+                }
+            }
+        }
+        else {
+            print("down")
+        }
+    }
+
     public func previewingContext(_ previewingContext: UIViewControllerPreviewing, viewControllerForLocation location: CGPoint) -> UIViewController? {
 
         let cellLocation = view.convert(location, to: tableView)
