@@ -21,7 +21,6 @@
 #import "ImageMessageCell.h"
 #import "MediaAsset.h"
 #import "UIView+WR_ExtendedBlockAnimations.h"
-#import "Wire-Swift.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

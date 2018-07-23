@@ -148,9 +148,7 @@ private struct InputBarConstants {
     public var editingBackgroundColor: UIColor?
     public var barBackgroundColor: UIColor?
     public var writingSeparatorColor: UIColor?
-    public var ephemeralColor: UIColor {
-        return .accent()
-    }
+    public var ephemeralColor: UIColor?
     public var placeholderColor: UIColor?
     public var textColor: UIColor?
 
@@ -204,9 +202,10 @@ private struct InputBarConstants {
         super.didMoveToWindow()
         // This is a workaround for UITextView truncating long contents.
         // However, this breaks the text view on iOS 8 ¯\_(ツ)_/¯.
-        textView.isScrollEnabled = false
-        textView.isScrollEnabled = true
-
+        if #available(iOS 9, *) {
+            textView.isScrollEnabled = false
+            textView.isScrollEnabled = true
+        }
         startCursorBlinkAnimation()
     }
     
@@ -352,7 +351,7 @@ private struct InputBarConstants {
         if let availabilityPlaceholder = availabilityPlaceholder {
             placeholder = availabilityPlaceholder
         } else if inputBarState.isEphemeral {
-            placeholder  = NSAttributedString(string: "conversation.input_bar.placeholder_ephemeral".localized) && ephemeralColor
+            placeholder  = NSAttributedString(string: "conversation.input_bar.placeholder_ephemeral".localized)
         }
         
         if case .editing = state {
@@ -414,8 +413,6 @@ private struct InputBarConstants {
         
         let completion: (Bool) -> Void = { _ in
             self.updateColors()
-            self.updatePlaceholderColors()
-
             if case .editing(_) = state {
                 self.textView.becomeFirstResponder()
             }

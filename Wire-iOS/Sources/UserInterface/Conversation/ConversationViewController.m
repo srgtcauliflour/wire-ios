@@ -94,6 +94,7 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 @property (nonatomic) BarController *conversationBarController;
 @property (nonatomic) MediaBarViewController *mediaBarViewController;
 
+@property (nonatomic) ConversationContentViewController *contentViewController;
 @property (nonatomic) UIViewController *participantsController;
 
 @property (nonatomic) ConversationInputBarViewController *inputBarController;
@@ -525,7 +526,6 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 
 #pragma mark - SwipeNavigationController's panning
 
-/// TODO: useless?
 - (BOOL)frameworkShouldRecognizePan:(UIPanGestureRecognizer *)gestureRecognizer
 {
     CGPoint location = [gestureRecognizer locationInView:self.view];
@@ -702,7 +702,7 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 
 // WARNING: DO NOT TOUCH THIS UNLESS YOU KNOW WHAT YOU ARE DOING
 - (void)invisibleInputAccessoryView:(InvisibleInputAccessoryView *)view superviewFrameChanged:(CGRect)frame
-{///frame is keyboard's frame,
+{
     // Adjust the input bar distance from bottom based on the invisibleAccessoryView
     CGFloat distanceFromBottom = 0;
 
@@ -728,9 +728,7 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
     else {
         self.inputBarBottomMargin.constant = -distanceFromBottom;
 
-        [self printDebugInfo];
         [self.view layoutIfNeeded];
-        self.contentViewController.tableView.isKeyboardDismissing = YES;
     }
 
 }
