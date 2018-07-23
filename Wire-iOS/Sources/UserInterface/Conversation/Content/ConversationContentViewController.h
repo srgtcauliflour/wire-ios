@@ -26,10 +26,13 @@
 @class ConversationMediaController;
 @class UpsideDownTableView;
 
+@protocol ConversationContentViewControllerPanGestureDelegate;
+
 /// The main conversation view controller
 @interface ConversationContentViewController : UIViewController
 
 @property (nonatomic, weak) id <ConversationContentViewControllerDelegate> delegate;
+@property (nonatomic, weak) id <ConversationContentViewControllerPanGestureDelegate> panGestrueDelegate;
 @property (nonatomic, readonly) ZMConversation *conversation;
 @property (nonatomic) CGFloat bottomMargin;
 @property (nonatomic, readonly) BOOL isScrolledToBottom;

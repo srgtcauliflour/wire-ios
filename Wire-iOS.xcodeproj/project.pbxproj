@@ -1168,6 +1168,9 @@
 		EFABC92420208D80001F9866 /* UIViewController+removeUserConfirmationUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFABC92320208D80001F9866 /* UIViewController+removeUserConfirmationUI.swift */; };
 		EFB23D0A1FC852380055B866 /* TextFieldValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF61B3411FC8508400D8E631 /* TextFieldValidator.swift */; };
 		EFB23D0B1FC853CF0055B866 /* AccessoryTextFieldValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF61B33F1FC84B0100D8E631 /* AccessoryTextFieldValidationTests.swift */; };
+		EFB341BB2106365700CBBACE /* ConversationContentViewControllerPanGestureDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB341BA2106365700CBBACE /* ConversationContentViewControllerPanGestureDelegate.swift */; };
+		EFB341BD2106370D00CBBACE /* ConversationViewController+PanGesture.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB341BC2106370D00CBBACE /* ConversationViewController+PanGesture.swift */; };
+		EFB341BF21063A7700CBBACE /* ConversationContentViewController+Scrolling.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB341BE21063A7700CBBACE /* ConversationContentViewController+Scrolling.swift */; };
 		EFC7146F20DD476000FAA4B4 /* CountryCodeTableViewControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFC7146D20DD471800FAA4B4 /* CountryCodeTableViewControllerTests.swift */; };
 		EFCDA974209A0F6D004682EA /* ImageMessageCell+ImageBorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFCDA973209A0F6D004682EA /* ImageMessageCell+ImageBorder.swift */; };
 		EFDACAB920FF715A00791207 /* ConversationInputBarViewController+OrientationAndSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFDACAB820FF715A00791207 /* ConversationInputBarViewController+OrientationAndSize.swift */; };
@@ -2807,6 +2810,9 @@
 		EFA820AD2019075400FED370 /* UIViewController+addViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIViewController+addViewController.swift"; sourceTree = "<group>"; };
 		EFABC921202085A6001F9866 /* UserDetailViewControllerFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDetailViewControllerFactory.swift; sourceTree = "<group>"; };
 		EFABC92320208D80001F9866 /* UIViewController+removeUserConfirmationUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIViewController+removeUserConfirmationUI.swift"; sourceTree = "<group>"; };
+		EFB341BA2106365700CBBACE /* ConversationContentViewControllerPanGestureDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationContentViewControllerPanGestureDelegate.swift; sourceTree = "<group>"; };
+		EFB341BC2106370D00CBBACE /* ConversationViewController+PanGesture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ConversationViewController+PanGesture.swift"; sourceTree = "<group>"; };
+		EFB341BE21063A7700CBBACE /* ConversationContentViewController+Scrolling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ConversationContentViewController+Scrolling.swift"; sourceTree = "<group>"; };
 		EFC7146D20DD471800FAA4B4 /* CountryCodeTableViewControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryCodeTableViewControllerTests.swift; sourceTree = "<group>"; };
 		EFCDA973209A0F6D004682EA /* ImageMessageCell+ImageBorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ImageMessageCell+ImageBorder.swift"; sourceTree = "<group>"; };
 		EFDACAB820FF715A00791207 /* ConversationInputBarViewController+OrientationAndSize.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ConversationInputBarViewController+OrientationAndSize.swift"; sourceTree = "<group>"; };
@@ -4745,6 +4751,7 @@
 				875F89151D6F35DC00D8748E /* ReactionsList */,
 				8FC851B0199245760008B66B /* ConversationViewController.h */,
 				8FC851B1199245760008B66B /* ConversationViewController.m */,
+				EFB341BC2106370D00CBBACE /* ConversationViewController+PanGesture.swift */,
 				BF1A81271C9848DB00A96CAA /* ConversationViewController+NavigationBar.swift */,
 				8FC851AE199245760008B66B /* ConversationViewController+ParticipantsPopover.h */,
 				8FC851AF199245760008B66B /* ConversationViewController+ParticipantsPopover.m */,
@@ -4764,6 +4771,7 @@
 				5E3A6C23206A4DDF00907484 /* Previews */,
 				8FC85181199245760008B66B /* Cells */,
 				8FC851AB199245760008B66B /* ConversationContentViewControllerDelegate.h */,
+				EFB341BA2106365700CBBACE /* ConversationContentViewControllerPanGestureDelegate.swift */,
 				8FC851A9199245760008B66B /* ConversationContentViewController.h */,
 				8FC851A6199245760008B66B /* ConversationContentViewController+Private.h */,
 				8FC851AA199245760008B66B /* ConversationContentViewController.m */,
@@ -4774,6 +4782,7 @@
 				87AAE4241E4347F000E1D13A /* ConversationContentViewController+PeekPop.swift */,
 				8FC851A7199245760008B66B /* ConversationContentViewController+Scrolling.h */,
 				8FC851A8199245760008B66B /* ConversationContentViewController+Scrolling.m */,
+				EFB341BE21063A7700CBBACE /* ConversationContentViewController+Scrolling.swift */,
 				878D7C8C1E65DB6500770E84 /* ConversationContentViewController+PinchZoom.h */,
 				878D7C8D1E65DB6500770E84 /* ConversationContentViewController+PinchZoom.m */,
 				BFE57B4A1D52335A00CB0806 /* ConversationPreviewViewController.swift */,
@@ -6980,6 +6989,7 @@
 				871BC27A1D34F8F800DF0793 /* WebLinkTextView.m in Sources */,
 				8F8914111A9F287E0056AB0C /* ConversationListCell.m in Sources */,
 				F16427061FCC5BE400D2ABFC /* SetFullNameStepDescription.swift in Sources */,
+				EFB341BF21063A7700CBBACE /* ConversationContentViewController+Scrolling.swift in Sources */,
 				160C311F1E4C78480012E4BC /* UnknownMessageCell.swift in Sources */,
 				EFF3DA432097548A007A3358 /* UIImage+MediaAssert.swift in Sources */,
 				87DCF4921D34E9BA00BB420F /* ContactsViewController+ShareContacts.m in Sources */,
@@ -7124,6 +7134,7 @@
 				87A540AA1E094BA3009028C5 /* CollectionCell.swift in Sources */,
 				BF8ECC331E5AED6C0015177D /* UIMenuItem+MessageActions.swift in Sources */,
 				DBD990561B39BEDF000ACF94 /* MentionsCollectionView.m in Sources */,
+				EFB341BD2106370D00CBBACE /* ConversationViewController+PanGesture.swift in Sources */,
 				87AAE41F1E423C2A00E1D13A /* CASStyler+Fonts.swift in Sources */,
 				871BC25A1D34F8F800DF0793 /* ZoomTransition.m in Sources */,
 				16C02A0D204D407100811912 /* TopPeopleSectionController.swift in Sources */,
@@ -7163,6 +7174,7 @@
 				EF2C18A01FED435600E9F2FD /* ConversationCell+BurstTimestamp.swift in Sources */,
 				EE8E926E2024F085000F4752 /* MarkdownTextView.swift in Sources */,
 				F12CDAE01E43868200CEFCEB /* ConfirmEmailViewController.swift in Sources */,
+				EFB341BB2106365700CBBACE /* ConversationContentViewControllerPanGestureDelegate.swift in Sources */,
 				876113E01DD1DD19007F5969 /* ColorSchemeController.m in Sources */,
 				EF2127041FB9DFE300625A9B /* RegistrationViewController.m in Sources */,
 				7CC085461F7AA30F0010F96B /* DotView.swift in Sources */,

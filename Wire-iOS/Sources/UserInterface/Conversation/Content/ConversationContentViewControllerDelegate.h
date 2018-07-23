@@ -39,8 +39,6 @@ didEndDisplayingActiveMediaPlayerForMessage:(id<ZMConversationMessage>)message;
             didScrollWithOffsetFromBottom:(CGFloat)offset
                         withLatestMessage:(id<ZMConversationMessage>)message;
 
-- (BOOL)conversationContentViewController:(ConversationContentViewController *)contentViewController scrollPanRegion:(CGPoint) point;
-
 - (void)conversationContentViewController:(ConversationContentViewController *)contentViewController didTriggerResendingMessage:(id<ZMConversationMessage>)message;
 
 - (void)conversationContentViewController:(ConversationContentViewController *)contentViewController didTriggerEditingMessage:(id<ZMConversationMessage>)message;

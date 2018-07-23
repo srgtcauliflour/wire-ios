@@ -190,6 +190,8 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
 {
     self.contentViewController = [[ConversationContentViewController alloc] initWithConversation:self.conversation];
     self.contentViewController.delegate = self;
+    self.contentViewController.panGestrueDelegate = self;
+
     self.contentViewController.view.translatesAutoresizingMaskIntoConstraints = NO;
     self.contentViewController.bottomMargin = 16;
 }
