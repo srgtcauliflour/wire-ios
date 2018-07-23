@@ -729,6 +729,7 @@ static NSString* ZMLogTag ZM_UNUSED = @"UI";
         self.inputBarBottomMargin.constant = -distanceFromBottom;
 
         [self.view layoutIfNeeded];
+        self.contentViewController.tableView.isKeyboardDismissing = YES;
     }
 
 }
