@@ -778,6 +778,11 @@ const static int ConversationContentViewControllerMessagePrefetchDepth = 10;
     [self.delegate conversationContentViewController:self presentGuestOptionsFromView:sourceView];
 }
 
+- (void)conversationCell:(ConversationCell *)cell openParticipantsDetailsWithSelectedUsers:(NSArray<ZMUser *> *)selectedUsers fromView:(UIView *)sourceView
+{
+    [self.delegate conversationContentViewController:self presentParticipantsDetailsWithSelectedUsers:selectedUsers fromView:sourceView];
+}
+
 @end
 
 
